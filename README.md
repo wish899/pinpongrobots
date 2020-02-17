@@ -1,4 +1,5 @@
 Code for Ping Pong Robot Simulation for ECE 470 - Spring 2020
+
 The goal of this project is to have two robots (UR3) simulate rallying a ping-pong ball back and forth through the use of simple hits. The robots will detect the ping pong ball and calculate their position based on the ball's location and make predicative measurements to get ready to hit the ball back.
 
 We are connecting remotely to coppelia through the python script, s
