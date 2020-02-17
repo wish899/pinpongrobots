@@ -24,6 +24,8 @@ except:
 
 import time
 import math
+import numpy as np
+import cv2
 
 print ('Program started')
 sim.simxFinish(-1) # just in case, close all opened connections
@@ -61,8 +63,8 @@ if clientID!=-1:
     targetPos0 = [radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)]
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
-        print(jointHandles[i])
-        print(targetPos0[i])
+        #print(jointHandles[i])
+        #print(targetPos0[i])
         if(i==0):
             sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], targetPos0[i], sim.simx_opmode_streaming)
             sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
@@ -72,12 +74,12 @@ if clientID!=-1:
 
     sim.simxPauseCommunication(clientID, False)
     # sim.rmlMoveToJointPositions(jointHandles, -1, currentVel, currentAccel, maxVel, maxAccel, maxJerk, targetPos0, targetVel)
-    
+    time.sleep(1)
     targetPos1 = [radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)]
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
-        print(jointHandles[i])
-        print(targetPos0[i])
+        #print(jointHandles[i])
+        #print(targetPos0[i])
         if(i==0):
             sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], targetPos1[i], sim.simx_opmode_streaming)
             sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
@@ -91,8 +93,8 @@ if clientID!=-1:
     targetPos2 = [radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)]
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
-        print(jointHandles[i])
-        print(targetPos0[i])
+        #print(jointHandles[i])
+        #print(targetPos0[i])
         if(i==0):
             sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], targetPos2[i], sim.simx_opmode_streaming)
             sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
@@ -107,8 +109,8 @@ if clientID!=-1:
     #targetPos2 = [radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)]
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
-        print(jointHandles[i])
-        print(targetPos0[i])
+        #print(jointHandles[i])
+        #print(targetPos0[i])
         if(i==0):
             sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], targetPos3[i], sim.simx_opmode_streaming)
             sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
@@ -120,17 +122,30 @@ if clientID!=-1:
     time.sleep(1)
     # sim.rmlMoveToJointPositions(jointHandles,-1,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos3,targetVel)
     # # Now retrieve streaming data (i.e. in a non-blocking fashion):
-    startTime=time.time()
-    sim.simxGetIntegerParameter(clientID,sim.sim_intparam_mouse_x,sim.simx_opmode_streaming) # Initialize streaming
-    while time.time()-startTime < 5:
-        returnCode,data=sim.simxGetIntegerParameter(clientID,sim.sim_intparam_mouse_x,sim.simx_opmode_buffer) # Try to retrieve the streamed data
-        if returnCode==sim.simx_return_ok: # After initialization of streaming, it will take a few ms before the first value arrives, so check the return code
-            print ('Mouse position x: ',data) # Mouse position x is actualized when the cursor is over CoppeliaSim's window
-        time.sleep(0.005)
+    # startTime=time.time()
+    # sim.simxGetIntegerParameter(clientID,sim.sim_intparam_mouse_x,sim.simx_opmode_streaming) # Initialize streaming
+    # while time.time()-startTime < 5:
+    #     returnCode,data=sim.simxGetIntegerParameter(clientID,sim.sim_intparam_mouse_x,sim.simx_opmode_buffer) # Try to retrieve the streamed data
+    #     if returnCode==sim.simx_return_ok: # After initialization of streaming, it will take a few ms before the first value arrives, so check the return code
+    #         print ('Mouse position x: ',data) # Mouse position x is actualized when the cursor is over CoppeliaSim's window
+    #     time.sleep(0.005)
 
     # Now send some data to CoppeliaSim in a non-blocking fashion:
     sim.simxAddStatusbarMessage(clientID,'Hello CoppeliaSim!',sim.simx_opmode_oneshot)
 
+
+    #Let's try reading some vision sensor data
+    #sensor_handle = sim.simxGetObjectHandle(clientID, 'Vision_sensor', sim.simx_opmode_blocking)
+
+    #img = sim.simxGetVisionSensorImage(clientID, sensor_handle[1], 0 , sim.simx_opmode_buffer)
+    #print(type(img))
+    #print(img)
+    #cv2.imshow(img)
+    #return_code, detection_state, aux_packets = sim.simxReadVisionSensor(clientID, sensor_handle[1], sim.simx_opmode_buffer)
+    #img = sim.simxGetVisionSensorImage(clientID, sensor_handle[1], 0, sim.simx_opmode_buffer)
+    #print(img)
+    #print(return_code)
+    #print(detection_state)
     # Before closing the connection to CoppeliaSim, make sure that the last command sent out had time to arrive. You can guarantee this with (for example):
     sim.simxGetPingTime(clientID)
 
@@ -139,3 +154,8 @@ if clientID!=-1:
 else:
     print ('Failed connecting to remote API server')
 print ('Program ended')
+
+#https://youtu.be/l0C5E4iqqRI 
+
+# Video link
+#https://youtu.be/Qj7Sv0V9yec 
