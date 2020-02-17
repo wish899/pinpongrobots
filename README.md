@@ -2,7 +2,7 @@ Code for Ping Pong Robot Simulation for ECE 470 - Spring 2020
 
 The goal of this project is to have two robots (UR3) simulate rallying a ping-pong ball back and forth through the use of simple hits. The robots will detect the ping pong ball and calculate their position based on the ball's location and make predicative measurements to get ready to hit the ball back.
 
-We are connecting remotely to coppelia through the python script, so just open the .ttt file and run it.
+We are connecting remotely to coppelia through the python script, so to run the simulation, run the .ttt file and then run the python script simpleTest.py
 
 simpleTest.py is the main file for demonstrating our use of our simulator (CoppeliaSim). This file is the basis for demonstrating basic movement of the robot and the basis for collecting vision sensor data. 
 
