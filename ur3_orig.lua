@@ -37,3 +37,25 @@ maxVel={vel*math.pi/180,vel*math.pi/180,vel*math.pi/180,vel*math.pi/180,vel*math
    targetPos3={0,0,0,0,0,0}
    sim.rmlMoveToJointPositions(jointHandles,-1,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos3,targetVel)
 end
+
+-- function sysCall_init() 
+--     -- Prepare a floating view with the camera views:
+--     cam=sim.getObjectAssociatedWithScript(sim.handle_self)
+--     view=sim.floatingViewAdd(0.9,0.3,0.2,0.2,0)
+--     sim.adjustView(view,cam,64)
+-- end
+
+--  function sysCall_actuation()
+    
+--     cam_handle = sim.getObjectHandle('Vision_sensor')
+--     sim.handleVisionSensor(cam_handle)
+--     result, t1, t2, t3 = sim.readVisionSensor(cam_handle)
+--     print(result)
+ 
+--  end
+
+-- function sysCall_cleanup() 
+--    if sim.isHandleValid(cam)==1 then
+--         sim.floatingViewRemove(view)
+--     end
+-- end 
