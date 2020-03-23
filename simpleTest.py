@@ -73,6 +73,7 @@ if clientID!=-1:
     ee_frame = sim.simxGetObjectHandle(clientID, 'Dummy0', sim.simx_opmode_blocking)
     base_frame_2 = sim.simxGetObjectHandle(clientID, 'Dummy1', sim.simx_opmode_blocking)
     ee_frame_2 = sim.simxGetObjectHandle(clientID, 'Dummy2', sim.simx_opmode_blocking)
+    ball_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
     print("Base Frame handle: ", base_frame)
     print("EE Frame handle: ", ee_frame)
     print("    \n")
@@ -231,6 +232,55 @@ if clientID!=-1:
     new_ori_b_ee = new_rot.as_euler('xyz')
 
     sim.simxSetObjectOrientation(clientID, ee_frame_2[1], base_frame_2[1], new_ori_b_ee, sim.simx_opmode_streaming)
+
+    print("\n", "Now trying inverse kinematics: ")
+    _, ball_pos = sim.simxGetObjectPosition(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
+
+    _, ball_ori = sim.simxGetObjectOrientation(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
+
+    ball_rot = R.from_euler('xyz', ball_ori)
+    ball_rot_mat = ball_rot.as_dcm()
+    T_b = np.zeros((4,4))
+    T_b[3,3] = 1
+    T_b[0:3, 0:3] = ball_rot_mat
+    T_b[0:3, 3] = ball_pos
+
+    theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)]) 
+
+    theta_list, success = mr.IKinSpace(S, M, T_b, theta_list_guess, 0.1, 0.1)
+
+    if success:
+        print(theta_list)
+    else:
+        print("Not successful, but here's the guess: \n", theta_list)
+    
+
+    #Now, let's check how close we are to the actual ball:
+    targetPos0_ik = theta_list % (2* np.pi)
+
+    #Let's get it back to zero and then let's do the turning
+    sim.simxPauseCommunication(clientID, True)
+    for i in range(6):
+        #print(jointHandles[i])
+        #print(targetPos0[i])
+        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], 0, sim.simx_opmode_streaming)
+        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
+
+    sim.simxPauseCommunication(clientID, False)
+    time.sleep(2)
+
+
+    sim.simxPauseCommunication(clientID, True)
+    for i in range(6):
+        #print(jointHandles[i])
+        #print(targetPos0[i])
+        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0_ik[i], sim.simx_opmode_streaming)
+        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
+
+    sim.simxPauseCommunication(clientID, False)
+    time.sleep(2)
+
+
 
     # Before closing the connection to CoppeliaSim, make sure that the last command sent out had time to arrive. You can guarantee this with (for example):
     sim.simxGetPingTime(clientID)
