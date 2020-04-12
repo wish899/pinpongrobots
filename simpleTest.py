@@ -62,18 +62,21 @@ if clientID!=-1:
     time.sleep(2)
 
     #print(objs)
-
+    #Let's set the velocity of the ball
+    ball_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
+    sim.simxSetObjectPosition(clientID, ball_handle[1], -1, [-1, -1, 1], sim.simx_opmode_streaming)
+    sim.simxPauseCommunication(clientID, True)
+    sim.simxSetObjectFloatParameter(clientID, ball_handle[1], sim.sim_objfloatparam_abs_y_velocity, 3, sim.simx_opmode_streaming)
+    sim.simxSetObjectFloatParameter(clientID, ball_handle[1], sim.sim_objfloatparam_abs_z_velocity, 5, sim.simx_opmode_streaming)
+    sim.simxPauseCommunication(clientID, False)
     print("Joint 1 Handles ... ")
     jointHandles=[-1,-1,-1,-1,-1,-1]
     for i in range(6):
        jointHandles[i]=sim.simxGetObjectHandle(clientID, 'UR3_joint' + str(i+1)+'#', sim.simx_opmode_blocking)
        print(jointHandles[i])
     print("    \n")
-    base_frame = sim.simxGetObjectHandle(clientID, 'Dummy', sim.simx_opmode_blocking)
-    ee_frame = sim.simxGetObjectHandle(clientID, 'Dummy0', sim.simx_opmode_blocking)
-    base_frame_2 = sim.simxGetObjectHandle(clientID, 'Dummy1', sim.simx_opmode_blocking)
-    ee_frame_2 = sim.simxGetObjectHandle(clientID, 'Dummy2', sim.simx_opmode_blocking)
-    ball_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
+    base_frame = sim.simxGetObjectHandle(clientID, 'Dummy0', sim.simx_opmode_blocking)
+    ee_frame = sim.simxGetObjectHandle(clientID, 'Dummy', sim.simx_opmode_blocking)
     print("Base Frame handle: ", base_frame)
     print("EE Frame handle: ", ee_frame)
     print("    \n")
@@ -137,8 +140,8 @@ if clientID!=-1:
     new_pose.resize((4,))
 
     #Set-up some of the RML vectors:
-    vel=180
-    accel=40
+    vel=90
+    accel=20
     jerk=80
     currentVel=[0,0,0,0,0,0,0]
     currentAccel=[0,0,0,0,0,0,0]
@@ -167,71 +170,6 @@ if clientID!=-1:
     new_ori_b_ee = new_rot.as_euler('xyz')
 
     sim.simxSetObjectOrientation(clientID, ee_frame[1], base_frame[1], new_ori_b_ee, sim.simx_opmode_streaming)
-    
-
-    
-
-    pos_b_ee_2 = sim.simxGetObjectPosition(clientID, ee_frame_2[1], base_frame_2[1], sim.simx_opmode_blocking)
-    #print(pos_b_ee[1])
-    ori_b_ee_2 = sim.simxGetObjectOrientation(clientID, ee_frame_2[1], base_frame_2[1], sim.simx_opmode_blocking)
-    #print(ori_b_ee)
-    rot_m_2 = R.from_euler('xyz', np.array(ori_b_ee[1]))
-    #print(rot_m.as_dcm().shape)
-    M_2 = np.zeros((4,4))
-    M_2[3][3] = 1
-    M_2[0:3, 0:3] = rot_m_2.as_dcm()
-    M_2[0:3, 3] = pos_b_ee_2[1]
-
-
-    ##Let's try also for the first robot, this time with a different set of angles
-    v_2 = np.zeros((6,3))
-    for i in range(6):
-        ret_code, q = sim.simxGetObjectPosition(clientID, jointHandles[i][1], base_frame_2[1], sim.simx_opmode_blocking)
-        q = np.array(q)
-        v_2[i,:] = np.cross(-1 * w[i,:], q)
-    S_2 = np.zeros((6,6))
-    S_2[:, 0:3] = w
-    S_2[:, 3:6] = v_2
-
-
-
-    targetPos1 = [radians(44),radians(-23),radians(65),radians(22),radians(199),radians(302)]
-    sim.simxPauseCommunication(clientID, True)
-    for i in range(6):
-        #print(jointHandles[i])
-        #print(targetPos0[i])
-        sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], targetPos1[i], sim.simx_opmode_streaming)
-        sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
-
-    sim.simxPauseCommunication(clientID, False)
-    time.sleep(2)
-
-    S_t = S_2.transpose()
-    print("Screw Matrix 2: ")
-    print(S_t, "\n") # debugging
-
-    T = mr.FKinSpace(M_2, S_t, np.array(targetPos1))
-    #print(type(T))
-    print("New Transformation Matrix 2: ")
-    print(T, "\n")
-    old_pos = np.ones((4,1))
-    old_pos[0:3] = 0
-    old_pos.resize((4,1))
-    new_pose = T @ old_pos
-    print("New Position 2: ")
-    print(new_pose)
-
-    new_pose.resize((4,))
-
-    ##Now, let us set up the Position of our dummy to match the position of the end_effector
-    sim.simxSetObjectPosition(clientID, ee_frame_2[1], base_frame_2[1], new_pose[0:3], sim.simx_opmode_streaming)
-
-    ##Then, let's also setup the orientation, after converting them to euler angles 
-    new_rot_mat = T[0:3,0:3]
-    new_rot = R.from_dcm(new_rot_mat)
-    new_ori_b_ee = new_rot.as_euler('xyz')
-
-    sim.simxSetObjectOrientation(clientID, ee_frame_2[1], base_frame_2[1], new_ori_b_ee, sim.simx_opmode_streaming)
 
     print("\n", "Now trying inverse kinematics: ")
     _, ball_pos = sim.simxGetObjectPosition(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
