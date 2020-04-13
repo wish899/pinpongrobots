@@ -142,7 +142,7 @@ if clientID!=-1:
     #Set-up some of the RML vectors:
     vel=90
     accel=20
-    jerk=80
+    jerk=40
     currentVel=[0,0,0,0,0,0,0]
     currentAccel=[0,0,0,0,0,0,0]
     maxVel=[vel*math.pi/180,vel*math.pi/180,vel*math.pi/180,vel*math.pi/180,vel*math.pi/180,vel*math.pi/180]
@@ -150,7 +150,7 @@ if clientID!=-1:
     maxJerk=[jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180]
     targetVel=[0,0,0,0,0,0]
     
-    targetPos0 = [radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)]
+    targetPos0 = [radians(0),radians(90),radians(0),radians(-60),radians(-90),radians(-90)]
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
         #print(jointHandles[i])
@@ -161,41 +161,29 @@ if clientID!=-1:
     sim.simxPauseCommunication(clientID, False)
     time.sleep(2)
 
-    ##Now, let us set up the Position of our dummy to match the position of the end_effector
-    sim.simxSetObjectPosition(clientID, ee_frame[1], base_frame[1], new_pose[0:3], sim.simx_opmode_streaming)
+    targetPos0 = [radians(-10),radians(90),radians(0),radians(-60),radians(-90),radians(-90)]
+    sim.simxPauseCommunication(clientID, True)
+    for i in range(6):
+        #print(jointHandles[i])
+        #print(targetPos0[i])
+        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0[i], sim.simx_opmode_streaming)
+        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
 
-    ##Then, let's also setup the orientation, after converting them to euler angles 
-    new_rot_mat = T[0:3,0:3]
-    new_rot = R.from_dcm(new_rot_mat)
-    new_ori_b_ee = new_rot.as_euler('xyz')
+    sim.simxPauseCommunication(clientID, False)
 
-    sim.simxSetObjectOrientation(clientID, ee_frame[1], base_frame[1], new_ori_b_ee, sim.simx_opmode_streaming)
+    time.sleep(1)
 
-    print("\n", "Now trying inverse kinematics: ")
-    _, ball_pos = sim.simxGetObjectPosition(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
+    targetPos0 = [radians(40),radians(90),radians(0),radians(-60),radians(-90),radians(-90)]
+    sim.simxPauseCommunication(clientID, True)
+    for i in range(6):
+        #print(jointHandles[i])
+        #print(targetPos0[i])
+        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0[i], sim.simx_opmode_streaming)
+        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
 
-    _, ball_ori = sim.simxGetObjectOrientation(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
+    sim.simxPauseCommunication(clientID, False)
 
-    ball_rot = R.from_euler('xyz', ball_ori)
-    ball_rot_mat = ball_rot.as_dcm()
-    T_b = np.zeros((4,4))
-    T_b[3,3] = 1
-    T_b[0:3, 0:3] = ball_rot_mat
-    T_b[0:3, 3] = ball_pos
-
-    theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)]) 
-
-    theta_list, success = mr.IKinSpace(S, M, T_b, theta_list_guess, 0.1, 0.1)
-
-    if success:
-        print(theta_list)
-    else:
-        print("Not successful, but here's the guess: \n", theta_list)
-    
-
-    #Now, let's check how close we are to the actual ball:
-    targetPos0_ik = theta_list % (2* np.pi)
-
+    time.sleep(2)
     #Let's get it back to zero and then let's do the turning
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
@@ -206,6 +194,46 @@ if clientID!=-1:
 
     sim.simxPauseCommunication(clientID, False)
     time.sleep(2)
+
+    # ##Now, let us set up the Position of our dummy to match the position of the end_effector
+    # sim.simxSetObjectPosition(clientID, ee_frame[1], base_frame[1], new_pose[0:3], sim.simx_opmode_streaming)
+
+    # ##Then, let's also setup the orientation, after converting them to euler angles 
+    # new_rot_mat = T[0:3,0:3]
+    # new_rot = R.from_dcm(new_rot_mat)
+    # new_ori_b_ee = new_rot.as_euler('xyz')
+    # sim.simxSetObjectOrientation(clientID, ee_frame[1], base_frame[1], new_ori_b_ee, sim.simx_opmode_streaming
+    print("\n", "Now trying inverse kinematics: ")
+    _, ball_pos = sim.simxGetObjectPosition(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
+
+    _, ball_ori = sim.simxGetObjectOrientation(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
+
+    ball_rot = R.from_euler('xyz', ball_ori)
+    ball_rot_mat = ball_rot.as_dcm()
+    ball_pos[0] = ball_pos[0] - 0.5
+    ball_pos[1] = ball_pos[1] - 0.5
+    T_b = np.zeros((4,4))
+    T_b[3,3] = 1
+    T_b[0:3, 0:3] = ball_rot_mat
+    T_b[0:3, 3] = ball_pos
+
+    print("Ball Position: ", ball_pos)
+    print("Ball Rotation: ", ball_rot.as_dcm())
+
+    #theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)]) 
+    theta_list_guess = np.array([radians(30),radians(-90),radians(20),radians(-50),radians(-90),radians(-90)])
+    theta_list, success = mr.IKinSpace(S, M, T_b, theta_list_guess, 0.2, 0.2)
+
+    if success:
+        print(theta_list)
+    else:
+        print("Not successful, but here's the guess: \n", theta_list)
+    
+
+    #Now, let's check how close we are to the actual ball:
+    targetPos0_ik = theta_list % (2* np.pi)
+
+    
 
 
     sim.simxPauseCommunication(clientID, True)
