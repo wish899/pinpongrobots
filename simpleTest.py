@@ -67,8 +67,9 @@ if clientID!=-1:
     # need to replace simxReadVisionSensor with simxCheckVisionSensor so
     # need to add this function to the sim.py library
     blob_camera = sim.simxGetObjectHandle(clientID, 'blobDetectionCamera_camera', sim.simx_opmode_blocking)
-    img_B = sim.simxGetVisionSensorImage(clientID, blob_camera[1], 0 , sim.simx_opmode_buffer)
-    detecting = sim.simxReadVisionSensor(clientID, blob_camera[1], sim.simx_opmode_buffer)
+    vision_camera = sim.simxGetObjectHandle(clientID, 'Vision_sensor', sim.simx_opmode_blocking)
+    img_B = sim.simxGetVisionSensorImage(clientID, vision_camera[1], 0 , sim.simx_opmode_streaming)
+    detecting = sim.simxReadVisionSensor(clientID, vision_camera[1], sim.simx_opmode_blocking)
     if(detecting[1] == 1):
         print('Dectecting Ball \n')
     else:
@@ -216,6 +217,7 @@ if clientID!=-1:
     # new_ori_b_ee = new_rot.as_euler('xyz')
     # sim.simxSetObjectOrientation(clientID, ee_frame[1], base_frame[1], new_ori_b_ee, sim.simx_opmode_streaming
     print("\n", "Now trying inverse kinematics: ")
+    time.sleep(2)
     _, ball_pos = sim.simxGetObjectPosition(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
 
     _, ball_ori = sim.simxGetObjectOrientation(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
@@ -233,8 +235,8 @@ if clientID!=-1:
     print("Ball Rotation: ", ball_rot.as_dcm())
 
     #theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)]) 
-    theta_list_guess = np.array([radians(30),radians(-90),radians(20),radians(-50),radians(-90),radians(-90)])
-    theta_list, success = mr.IKinSpace(S, M, T_b, theta_list_guess, 0.2, 0.2)
+    theta_list_guess = np.array([radians(30),radians(-90),radians(0),radians(-50),radians(-90),radians(-90)])
+    theta_list, success = mr.IKinSpace(S, M, T_b, theta_list_guess, 0.01, 0.01)
 
     if success:
         print(theta_list)
