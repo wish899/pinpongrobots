@@ -1,4 +1,4 @@
-# Make sure to have the server side running in CoppeliaSim: 
+# Make sure to have the server side running in CoppeliaSim:
 # in a child script of a CoppeliaSim scene, add following command
 # to be executed just once, at simulation start:
 #
@@ -15,9 +15,9 @@ def radians(angle):
     return angle * (math.pi/180)
 
 def skew_symmetric(screw, theta):
-    s_k = np.array([[0,       -screw[2], screw[1], screw[3]], 
-                    [screw[2],    0,     -screw[0], screw[4]], 
-                    [-screw[1], screw[0],   0,      screw[5]], 
+    s_k = np.array([[0,       -screw[2], screw[1], screw[3]],
+                    [screw[2],    0,     -screw[0], screw[4]],
+                    [-screw[1], screw[0],   0,      screw[5]],
                     [0,          0,         0,         0]])
     s_k *= theta
     return s_k
@@ -62,6 +62,18 @@ if clientID!=-1:
     time.sleep(2)
 
     #print(objs)
+
+    # trying to get blob camera to detect the green ball in its line of sight
+    # need to replace simxReadVisionSensor with simxCheckVisionSensor so
+    # need to add this function to the sim.py library
+    blob_camera = sim.simxGetObjectHandle(clientID, 'blobDetectionCamera_camera', sim.simx_opmode_blocking)
+    img_B = sim.simxGetVisionSensorImage(clientID, blob_camera[1], 0 , sim.simx_opmode_buffer)
+    detecting = sim.simxReadVisionSensor(clientID, blob_camera[1], sim.simx_opmode_buffer)
+    if(detecting[1] == 1):
+        print('Dectecting Ball \n')
+    else:
+        print('Not Dectecting Ball \n')
+
     #Let's set the velocity of the ball
     ball_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
     sim.simxSetObjectPosition(clientID, ball_handle[1], -1, [-1, -1, 1], sim.simx_opmode_streaming)
@@ -87,8 +99,8 @@ if clientID!=-1:
         print(jointHandles_2[i])
 
     print(" ")
-    #Let's try getting the position and orientation of each of the joints: 
-    
+    #Let's try getting the position and orientation of each of the joints:
+
     ####pos0 = sim.simxGetObjectPosition(clientID, jointHandles_2[0][1], base_frame[1], sim.simx_opmode_blocking)
     ####pos1 = sim.simxGetObjectPosition(clientID, jointHandles_2[0][1], base_frame[1], sim.simx_opmode_blocking)
     pos_b_ee = sim.simxGetObjectPosition(clientID, ee_frame[1], base_frame[1], sim.simx_opmode_blocking)
@@ -105,7 +117,7 @@ if clientID!=-1:
     print(M)
     print(" ")
     ###ret_code, rot_matrix = sim.simxGetJointMatrix(clientID, jointHandles_2[5][1], sim.simx_opmode_blocking)
-    ###Get the joint positions and orientations with respect to base frame 
+    ###Get the joint positions and orientations with respect to base frame
     np.set_printoptions(precision=3)
     w = np.array([[0,0,1], [-1,0,0], [-1,0,0], [-1,0,0], [0,0,1], [1,0,0]])
     print("Angular Velocities: ")
@@ -117,7 +129,7 @@ if clientID!=-1:
         q = np.array(q)
         v[i,:] = np.cross(-1 * w[i,:], q)
 
-    print("Linear Velocities: ")   
+    print("Linear Velocities: ")
     print(v, "\n")
     S = np.zeros((6,6))
     S[:, 0:3] = w
@@ -149,7 +161,7 @@ if clientID!=-1:
     maxAccel=[accel*math.pi/180,accel*math.pi/180,accel*math.pi/180,accel*math.pi/180,accel*math.pi/180,accel*math.pi/180]
     maxJerk=[jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180]
     targetVel=[0,0,0,0,0,0]
-    
+
     targetPos0 = [radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)]
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
@@ -164,7 +176,7 @@ if clientID!=-1:
     ##Now, let us set up the Position of our dummy to match the position of the end_effector
     sim.simxSetObjectPosition(clientID, ee_frame[1], base_frame[1], new_pose[0:3], sim.simx_opmode_streaming)
 
-    ##Then, let's also setup the orientation, after converting them to euler angles 
+    ##Then, let's also setup the orientation, after converting them to euler angles
     new_rot_mat = T[0:3,0:3]
     new_rot = R.from_dcm(new_rot_mat)
     new_ori_b_ee = new_rot.as_euler('xyz')
@@ -183,7 +195,7 @@ if clientID!=-1:
     T_b[0:3, 0:3] = ball_rot_mat
     T_b[0:3, 3] = ball_pos
 
-    theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)]) 
+    theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)])
 
     theta_list, success = mr.IKinSpace(S, M, T_b, theta_list_guess, 0.1, 0.1)
 
@@ -191,7 +203,7 @@ if clientID!=-1:
         print(theta_list)
     else:
         print("Not successful, but here's the guess: \n", theta_list)
-    
+
 
     #Now, let's check how close we are to the actual ball:
     targetPos0_ik = theta_list % (2* np.pi)
@@ -218,7 +230,7 @@ if clientID!=-1:
     sim.simxPauseCommunication(clientID, False)
     time.sleep(2)
 
-
+    #sim.simxSetObjectPosition(clientID, P_ball_handle[1], -1, [-1, -1, 1], sim.simx_opmode_streaming)
 
     # Before closing the connection to CoppeliaSim, make sure that the last command sent out had time to arrive. You can guarantee this with (for example):
     sim.simxGetPingTime(clientID)
@@ -237,11 +249,11 @@ if clientID!=-1:
     #         sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
     #     else:
     #        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos1[i], sim.simx_opmode_buffer)
-    #        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_buffer) 
+    #        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_buffer)
 
     # sim.simxPauseCommunication(clientID, False)
     # time.sleep(1)
-    
+
     # # sim.rmlMoveToJointPositions(jointHandles,-1,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos1,targetVel)
     # time.sleep(1)
     # targetPos2 = [radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)]
@@ -254,7 +266,7 @@ if clientID!=-1:
     #         sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
     #     else:
     #        sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], targetPos2[i], sim.simx_opmode_buffer)
-    #        sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_buffer) 
+    #        sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_buffer)
 
     # sim.simxPauseCommunication(clientID, False)
     # # sim.rmlMoveToJointPositions(jointHandles,-1,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos2,targetVel)
@@ -270,9 +282,9 @@ if clientID!=-1:
     #         sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
     #     else:
     #        sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], targetPos3[i], sim.simx_opmode_buffer)
-    #        sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_buffer) 
+    #        sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_buffer)
 
-    # sim.simxPauseCommunication(clientID, False)    
+    # sim.simxPauseCommunication(clientID, False)
     # time.sleep(1)
     # # sim.rmlMoveToJointPositions(jointHandles,-1,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos3,targetVel)
     # # # Now retrieve streaming data (i.e. in a non-blocking fashion):
@@ -300,12 +312,12 @@ if clientID!=-1:
     # print(img)
     # #print(return_code)
     # #print(detection_state)
-    
+
 else:
     print ('Failed connecting to remote API server')
 print ('Program ended')
 
-#https://youtu.be/l0C5E4iqqRI 
+#https://youtu.be/l0C5E4iqqRI
 
 # Video link
-#https://youtu.be/Qj7Sv0V9yec 
+#https://youtu.be/Qj7Sv0V9yec
