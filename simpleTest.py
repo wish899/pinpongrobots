@@ -76,11 +76,11 @@ if clientID!=-1:
 
     #Let's set the velocity of the ball
     ball_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
-    sim.simxSetObjectPosition(clientID, ball_handle[1], -1, [-1, -1, 1], sim.simx_opmode_streaming)
-    sim.simxPauseCommunication(clientID, True)
-    sim.simxSetObjectFloatParameter(clientID, ball_handle[1], sim.sim_objfloatparam_abs_y_velocity, 3, sim.simx_opmode_streaming)
-    sim.simxSetObjectFloatParameter(clientID, ball_handle[1], sim.sim_objfloatparam_abs_z_velocity, 5, sim.simx_opmode_streaming)
-    sim.simxPauseCommunication(clientID, False)
+    # sim.simxSetObjectPosition(clientID, ball_handle[1], -1, [-1, -1, 1], sim.simx_opmode_streaming)
+    # sim.simxPauseCommunication(clientID, True)
+    # sim.simxSetObjectFloatParameter(clientID, ball_handle[1], sim.sim_objfloatparam_abs_y_velocity, 3, sim.simx_opmode_streaming)
+    # sim.simxSetObjectFloatParameter(clientID, ball_handle[1], sim.sim_objfloatparam_abs_z_velocity, 5, sim.simx_opmode_streaming)
+    # sim.simxPauseCommunication(clientID, False)
     print("Joint 1 Handles ... ")
     jointHandles=[-1,-1,-1,-1,-1,-1]
     for i in range(6):
