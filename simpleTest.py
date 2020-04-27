@@ -11,6 +11,11 @@
 from scipy.spatial.transform import Rotation as R
 from scipy.linalg import expm
 
+import sys
+sys.path.append('./')
+import inverse_kinematics as ik
+#import modern_robotics as mr
+
 def radians(angle):
     return angle * (math.pi/180)
 
@@ -25,7 +30,7 @@ def skew_symmetric(screw, theta):
 def get_transform(M, S, theta_list):
     T = M
     for i in range(S.shape[0]):
-        T = T @ expm(skew_symmetric(S[i,:], theta_list[i]))
+        T = T @ expm(skew_symmetric(S[i,:].transpose(), theta_list[i]))
     return T
 
 
@@ -43,8 +48,6 @@ except:
 import time
 import math
 import numpy as np
-import modern_robotics as mr
-#import cv2
 
 print ('Program started')
 sim.simxFinish(-1) # just in case, close all opened connections
@@ -139,8 +142,8 @@ if clientID!=-1:
     print("Screw Matrix: ")
     print(S_t, "\n") # debugging
 
-    T = mr.FKinSpace(M, S_t, np.array([radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)])) #Fill the array with actual values later
-    #print(type(T))
+    #T = mr.FKinSpace(M, S_t, np.array([radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)])) #Fill the array with actual values later
+    T = get_transform(M, S_t, np.zeros((6,)))#print(type(T))
     print("New Transformation Matrix: ")
     print(T, "\n")
     old_pos = np.ones((4,1))
@@ -163,41 +166,31 @@ if clientID!=-1:
     maxJerk=[jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180]
     targetVel=[0,0,0,0,0,0]
     
-    targetPos0 = [radians(0),radians(90),radians(0),radians(-60),radians(-90),radians(-90)]
-    sim.simxPauseCommunication(clientID, True)
-    for i in range(6):
-        #print(jointHandles[i])
-        #print(targetPos0[i])
-        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0[i], sim.simx_opmode_streaming)
-        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
+    #I'm gonna try looking at the various ways in which the ping pong ball can hit
+    #Right side: 
+    #Max(Theta2): 64.1, Max(Theta3): 84.1, Theta 5: -90, Theta 6: 90
+    #Left side: 
+    #Max(Theta2): -64.1, Max(Theta3): -84.1, Theta 5: 90, Theta 6: 90
+    # targetPos0 = [radians(0),radians(64.1),radians(0),radians(0),radians(-90),radians(90)]
+    # sim.simxPauseCommunication(clientID, True)
+    # for i in range(6):
+    #     #print(jointHandles[i])
+    #     #print(targetPos0[i])
+    #     sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0[i], sim.simx_opmode_streaming)
+    #     sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
 
-    sim.simxPauseCommunication(clientID, False)
-    time.sleep(2)
+    # sim.simxPauseCommunication(clientID, False)
+    # time.sleep(1)
+    # targetPos0 = [radians(10),radians(64.1),radians(0),radians(0),radians(-90),radians(90)]
+    # sim.simxPauseCommunication(clientID, True)
+    # for i in range(6):
+    #     #print(jointHandles[i])
+    #     #print(targetPos0[i])
+    #     sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0[i], sim.simx_opmode_streaming)
+    #     sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
 
-    targetPos0 = [radians(-10),radians(90),radians(0),radians(-60),radians(-90),radians(-90)]
-    sim.simxPauseCommunication(clientID, True)
-    for i in range(6):
-        #print(jointHandles[i])
-        #print(targetPos0[i])
-        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0[i], sim.simx_opmode_streaming)
-        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
-
-    sim.simxPauseCommunication(clientID, False)
-
-    time.sleep(1)
-
-    targetPos0 = [radians(40),radians(90),radians(0),radians(-60),radians(-90),radians(-90)]
-    sim.simxPauseCommunication(clientID, True)
-    for i in range(6):
-        #print(jointHandles[i])
-        #print(targetPos0[i])
-        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0[i], sim.simx_opmode_streaming)
-        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
-
-    sim.simxPauseCommunication(clientID, False)
-
-    time.sleep(2)
-    #Let's get it back to zero and then let's do the turning
+    # sim.simxPauseCommunication(clientID, False)
+    # time.sleep(1)
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
         #print(jointHandles[i])
@@ -218,38 +211,37 @@ if clientID!=-1:
     # sim.simxSetObjectOrientation(clientID, ee_frame[1], base_frame[1], new_ori_b_ee, sim.simx_opmode_streaming
     print("\n", "Now trying inverse kinematics: ")
     time.sleep(2)
-    _, ball_pos = sim.simxGetObjectPosition(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
+    _, ball_pos = sim.simxGetObjectPosition(clientID, ball_handle[1], -1, sim.simx_opmode_blocking)
 
-    _, ball_ori = sim.simxGetObjectOrientation(clientID, ball_handle[1], base_frame[1], sim.simx_opmode_blocking)
+    _, ball_ori = sim.simxGetObjectOrientation(clientID, ball_handle[1], -1, sim.simx_opmode_blocking)
 
     ball_rot = R.from_euler('xyz', ball_ori)
     ball_rot_mat = ball_rot.as_dcm()
-    ball_pos[0] = ball_pos[0] - 0.5
-    ball_pos[1] = ball_pos[1] - 0.5
-    T_b = np.zeros((4,4))
-    T_b[3,3] = 1
-    T_b[0:3, 0:3] = ball_rot_mat
-    T_b[0:3, 3] = ball_pos
+    # ball_pos[0] = ball_pos[0]
+    # ball_pos[1] = ball_pos[1]
 
-    print("Ball Position: ", ball_pos)
-    print("Ball Rotation: ", ball_rot.as_dcm())
+    world_coord = np.array([ball_pos[0], ball_pos[1]-.07, ball_pos[2]])
+    world_coord = np.abs(world_coord)
+   
+    guess_angles = ik.findJointAngles(world_coord[0]+.07, world_coord[1], world_coord[2]+0.1)
+    targetPos0_ik = guess_angles
 
-    #theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)]) 
-    theta_list_guess = np.array([radians(30),radians(-90),radians(0),radians(-50),radians(-90),radians(-90)])
-    theta_list, success = mr.IKinSpace(S, M, T_b, theta_list_guess, 0.01, 0.01)
+    if(ball_pos[0] < 0):
+        targetPos0_ik[0] = -guess_angles[0]
+        targetPos0_ik[1] = -guess_angles[1]
+        targetPos0_ik[2] = -guess_angles[2]
+        targetPos0_ik[3] = -guess_angles[3]
+        targetPos0_ik[4] = radians(90)
 
-    if success:
-        print(theta_list)
-    else:
-        print("Not successful, but here's the guess: \n", theta_list)
+    sim.simxPauseCommunication(clientID, True)
+    for i in range(6):
+        #print(jointHandles[i])
+        #print(targetPos0[i])
+        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], 0, sim.simx_opmode_streaming)
+        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
 
-
-    #Now, let's check how close we are to the actual ball:
-    targetPos0_ik = theta_list % (2* np.pi)
-
+    sim.simxPauseCommunication(clientID, False)
     
-
-
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
         #print(jointHandles[i])
@@ -259,6 +251,43 @@ if clientID!=-1:
 
     sim.simxPauseCommunication(clientID, False)
     time.sleep(2)
+
+    sim.simxPauseCommunication(clientID, True)
+    for i in range(6):
+        #print(jointHandles[i])
+        #print(targetPos0[i])
+        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], 0, sim.simx_opmode_streaming)
+        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
+
+    sim.simxPauseCommunication(clientID, False)
+    time.sleep(2)
+    # T_b = np.zeros((4,4))
+    # T_b[3,3] = 1
+    # T_b[0:3, 0:3] = ball_rot_mat
+    # T_b[0:3, 3] = ball_pos
+
+    # print("Ball Position: ", ball_pos)
+    # print("Ball Rotation: ", ball_rot.as_dcm())
+
+    # #theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)]) 
+    # theta_list_guess = np.array([radians(0),radians(64.1),radians(0),radians(0),radians(90),radians(90)])
+    # theta_list, success = mr.IKinSpace(S, M, T_b, theta_list_guess, 0.01, 0.01)
+
+    # if success:
+    #     print(theta_list)
+    # else:
+    #     print("Not successful, but here's the guess: \n", theta_list)
+
+    #Now, let's check how close we are to the actual ball:
+    # sim.simxPauseCommunication(clientID, True)
+    # for i in range(6):
+    #     #print(jointHandles[i])
+    #     #print(targetPos0[i])
+    #     sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0_ik[i], sim.simx_opmode_streaming)
+    #     sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
+
+    # sim.simxPauseCommunication(clientID, False)
+    # time.sleep(2)
 
     #sim.simxSetObjectPosition(clientID, P_ball_handle[1], -1, [-1, -1, 1], sim.simx_opmode_streaming)
 
