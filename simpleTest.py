@@ -66,17 +66,32 @@ if clientID!=-1:
 
     #print(objs)
 
-    # trying to get blob camera to detect the green ball in its line of sight
-    # need to replace simxReadVisionSensor with simxCheckVisionSensor so
-    # need to add this function to the sim.py library
-    blob_camera = sim.simxGetObjectHandle(clientID, 'blobDetectionCamera_camera', sim.simx_opmode_blocking)
-    vision_camera = sim.simxGetObjectHandle(clientID, 'Vision_sensor', sim.simx_opmode_blocking)
-    img_B = sim.simxGetVisionSensorImage(clientID, vision_camera[1], 0 , sim.simx_opmode_streaming)
-    detecting = sim.simxReadVisionSensor(clientID, vision_camera[1], sim.simx_opmode_blocking)
-    if(detecting[1] == 1):
-        print('Dectecting Ball \n')
-    else:
-        print('Not Dectecting Ball \n')
+    # using proximity sensor to detect when the ball hits the wall (enters proximity range)
+    detect_handle = sim.simxGetObjectHandle(clientID, 'DetectBall', sim.simx_opmode_blocking)
+    prox_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor', sim.simx_opmode_blocking)
+    sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [-1.48, -0.5250, 0.0463], sim.simx_opmode_oneshot)
+    sim.simxPauseCommunication(clientID, True)
+    sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3000, -0.2, sim.simx_opmode_oneshot)
+    sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3002, 2, sim.simx_opmode_oneshot)
+    sim.simxPauseCommunication(clientID, False)
+    sim.simxReadProximitySensor(clientID, prox_handle[1], sim.simx_opmode_streaming)
+
+    y = 0
+    points = []
+    leave = 0
+    # enter while loop to read proximity sensor
+    while (y == 0):
+        # read prox sensor and get detected points
+        ret, dS, dP, dOH, dSNV = sim.simxReadProximitySensor(clientID, prox_handle[1], sim.simx_opmode_buffer)
+        # detecting
+        if(dS == 1):
+            # store all the detected points
+            points.append(dP)
+            leave = 1
+        # not detecting and is heading away from wall
+        elif(dS == 0 and leave == 1):
+            y = 1
+    print("Last Ball Detection Coordinates: ", points[-1])
 
     #Let's set the velocity of the ball
     ball_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
@@ -165,11 +180,11 @@ if clientID!=-1:
     maxAccel=[accel*math.pi/180,accel*math.pi/180,accel*math.pi/180,accel*math.pi/180,accel*math.pi/180,accel*math.pi/180]
     maxJerk=[jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180,jerk*math.pi/180]
     targetVel=[0,0,0,0,0,0]
-    
+
     #I'm gonna try looking at the various ways in which the ping pong ball can hit
-    #Right side: 
+    #Right side:
     #Max(Theta2): 64.1, Max(Theta3): 84.1, Theta 5: -90, Theta 6: 90
-    #Left side: 
+    #Left side:
     #Max(Theta2): -64.1, Max(Theta3): -84.1, Theta 5: 90, Theta 6: 90
     # targetPos0 = [radians(0),radians(64.1),radians(0),radians(0),radians(-90),radians(90)]
     # sim.simxPauseCommunication(clientID, True)
@@ -204,7 +219,7 @@ if clientID!=-1:
     # ##Now, let us set up the Position of our dummy to match the position of the end_effector
     # sim.simxSetObjectPosition(clientID, ee_frame[1], base_frame[1], new_pose[0:3], sim.simx_opmode_streaming)
 
-    # ##Then, let's also setup the orientation, after converting them to euler angles 
+    # ##Then, let's also setup the orientation, after converting them to euler angles
     # new_rot_mat = T[0:3,0:3]
     # new_rot = R.from_dcm(new_rot_mat)
     # new_ori_b_ee = new_rot.as_euler('xyz')
@@ -222,7 +237,7 @@ if clientID!=-1:
 
     world_coord = np.array([ball_pos[0], ball_pos[1]-.07, ball_pos[2]])
     world_coord = np.abs(world_coord)
-   
+
     guess_angles = ik.findJointAngles(world_coord[0]+.07, world_coord[1], world_coord[2]+0.1)
     targetPos0_ik = guess_angles
 
@@ -241,7 +256,7 @@ if clientID!=-1:
         sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
 
     sim.simxPauseCommunication(clientID, False)
-    
+
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
         #print(jointHandles[i])
@@ -269,7 +284,7 @@ if clientID!=-1:
     # print("Ball Position: ", ball_pos)
     # print("Ball Rotation: ", ball_rot.as_dcm())
 
-    # #theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)]) 
+    # #theta_list_guess = np.array([radians(-70), radians(-50), radians(-50), radians(-30), radians(50), radians(0)])
     # theta_list_guess = np.array([radians(0),radians(64.1),radians(0),radians(0),radians(90),radians(90)])
     # theta_list, success = mr.IKinSpace(S, M, T_b, theta_list_guess, 0.01, 0.01)
 
