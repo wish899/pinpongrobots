@@ -173,10 +173,10 @@ def hit_ball(clientID):
                         [0, 0,  1,  .043], 
                         [0, 0,  0,     1]])
         prox_pos = np.array([[pred_pos[0]], [pred_pos[1]], [pred_pos[2]],[1]])
-        ball_pos = T_prox @ prox_pos
+        ball_pos = np.linalg.inv(T_prox) @ prox_pos
         print(ball_pos)
         
-        targetPos0_ik = ik.findJointAngles(ball_pos[0], ball_pos[1]+0.1, ball_pos[2])
+        targetPos0_ik = ik.findJointAngles(ball_pos[0, :], ball_pos[1,:]+0.1, ball_pos[2,:]+0.1)
 
         print(targetPos0_ik)
 
@@ -210,6 +210,7 @@ def hit_ball(clientID):
             sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], targetPos0_ik[i], sim.simx_opmode_streaming)
             sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
         sim.simxPauseCommunication(clientID, False)
+        ball_hit=True
         hit_wall = False
     
 
@@ -259,25 +260,27 @@ def main():
         detect_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
         prox_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor', sim.simx_opmode_blocking)
         racket_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor0', sim.simx_opmode_blocking)
-        sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [0.5, 0.475, 0.0463], sim.simx_opmode_oneshot)
+        sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [0.67, 0.47, 0.0995], sim.simx_opmode_oneshot)
         sim.simxPauseCommunication(clientID, True)
-        sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3001, 0.5, sim.simx_opmode_oneshot)
-        sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3000, -0.08, sim.simx_opmode_oneshot)
-        sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3002, 0.5, sim.simx_opmode_oneshot)
+        sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3001, 1, sim.simx_opmode_oneshot)
+        #sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3000, -0.01, sim.simx_opmode_oneshot)
+        sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3002, 1, sim.simx_opmode_oneshot)
         sim.simxPauseCommunication(clientID, False)
         sim.simxReadProximitySensor(clientID, prox_handle[1], sim.simx_opmode_streaming)
         sim.simxGetObjectVelocity(clientID, detect_handle[1], sim.simx_opmode_streaming)
         sim.simxReadProximitySensor(clientID, racket_handle[1], sim.simx_opmode_streaming)
+        ball_thread = threading.Thread(target=get_ball_info, args=({clientID:clientID}))
         try:        
             #getting joint handles and initializing the joints in the simulation
             print("1. getting joint angles")
-            jointHandles=[]
+            jointHandles = []
             for i in range(6):
-                jointHandles.append(sim.simxGetObjectHandle(clientID, 'UR3_joint' + str(i+1)+'#0', sim.simx_opmode_blocking))
-                time.sleep(.0001)
+                handle = sim.simxGetObjectHandle(clientID, 'UR3_joint' + str(i+1)+'#0', sim.simx_opmode_blocking)
+                jointHandles.append(handle)
+                time.sleep(0.01)
             
             for i in range(6): print (jointHandles[i])
-            ball_thread = threading.Thread(target=get_ball_info, args=({clientID:clientID}))
+            
             #hit_thread = threading.Thread(target=hit_ball, args=({clientID:clientID}))
             ball_thread.daemon = True
             #hit_thread.daemon = True
@@ -295,9 +298,9 @@ def main():
 
             
             #Set-up some of the RML vectors:
-            vel=90
-            accel=20
-            jerk=40
+            vel=60
+            accel=10
+            jerk=20
             currentVel=[0,0,0,0,0,0,0]
             currentAccel=[0,0,0,0,0,0,0]
             maxVel=[vel*math.pi/180,vel*math.pi/180,vel*math.pi/180,vel*math.pi/180,vel*math.pi/180,vel*math.pi/180]
@@ -326,27 +329,36 @@ def main():
                 pred_pos = b_ball.trajectory(ball_coord[0], ball_coord[1], ball_coord[2], ball_linear)
                 T_prox = np.array([[-1, 0, 0, 0.025], 
                                 [0, -1,  0, 2.85],
-                                [0, 0,  1,  .043], 
+                                [0, 0,  1,  -.05], 
                                 [0, 0,  0,     1]])
                 prox_pos = np.array([[pred_pos[0]], [pred_pos[1]], [pred_pos[2]],[1]])
                 ball_pos = T_prox @ prox_pos
+                print(ball_pos)
                 #set the left flag to true if on left side
                 left = 0
                 if ball_pos[0,:] < 0: left=1
 
                 #convert to right-side coordinates for IK
-                ball_pos = np.abs(ball_pos)
-                print(ball_pos)
-                targetPos0_ik = ik.findJointAngles(ball_pos[0,:]+0.1, ball_pos[1,:], ball_pos[2,:]+0.1)
+                ball_pos[0,:] = np.abs(ball_pos[0,:])
+
+                if ball_pos[0, :] > 0.9:
+                    print("Ball too far away from robot. will not hit it ...")
+                    raise ValueError
+                
+                twist_angle = (-92.85) * (ball_pos[0,:]) + 90
+                print(ball_pos, "left?: ", left)
+                targetPos0_ik = ik.findJointAngles(ball_pos[0,:], ball_pos[1,:], ball_pos[2,:] + 0.15)
 
                 #Invert joint angles if on left side of robot
                 
-                # for i in range(len(targetPos0_ik)):
-                #     targetPos0_ik[i] = ((-2 * left) + 1) * targetPos0_ik[i]
+                for i in range(len(targetPos0_ik)):
+                    targetPos0_ik[i] = ((-2 * left) + 1) * targetPos0_ik[i]
                 
                 print("Applying the hitting motion")
                 #Apply the hitting motion using the new joint angles
-                
+
+                targetPos0_ik[0] = targetPos0_ik[0] + ((-2 * left) + 1) * (0 * np.pi/180) #To simulate a hit
+                targetPos0_ik[4] = targetPos0_ik[4] + ((-2 * left) + 1) * (0 * np.pi/180)
                 sim.simxPauseCommunication(clientID, True)
                 for i in range(6):
                     #print(jointHandles[i])
@@ -355,18 +367,20 @@ def main():
                     sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
 
                 sim.simxPauseCommunication(clientID, False)
-                time.sleep(2)
                 #Now read from the proximity sensor to see if it detects any ball
                 ret, dS, dP, dOH, dSNV = sim.simxReadProximitySensor(clientID, racket_handle[1], sim.simx_opmode_buffer)
                 while(dS == 0):
-                    print('seen it yet?')
                     ret, dS, dP, dOH, dSNV = sim.simxReadProximitySensor(clientID, racket_handle[1], sim.simx_opmode_buffer)
+                
+                print("Status of Ball is: ", dS)
                 #Now, attach a proximity sensor to the racquet and see if it detects a ball. If it does, let's start the 
                 #hitting motion
                 #Actually, for now, let's just not worry about this. Let's make sure that the trajectory generation and the ball hitting
                 #works
+
+                targetPos0_ik[0] = targetPos0_ik[0] + ((-2 * left) + 1) * ((1 * twist_angle) * np.pi/180) #To simulate a hit
                 
-                targetPos0_ik[0] = targetPos0_ik[0] + ((-2 * 0) + 1) * (60 * np.pi/180) #To simulate a hit
+                targetPos0_ik[4] = targetPos0_ik[4] + ((-2 * left) + 1) * (-1 * twist_angle * np.pi/180)
                 # sim.simxPauseCommunication(clientID, True)
                 # for i in range(6):
                 #     #print(jointHandles[i])
@@ -375,11 +389,14 @@ def main():
                 #     sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_buffer)
                 # sim.simxPauseCommunication(clientID, False)
                 # time.sleep(2)
+                ball_hit = True
+                hit_wall = False
                 sim.simxPauseCommunication(clientID, True)
-                sim.simxSetJointTargetPosition(clientID, jointHandles[0][1], targetPos0_ik[0], sim.simx_opmode_streaming)
-                sim.simxSetJointTargetVelocity(clientID, jointHandles[0][1], targetVel[0], sim.simx_opmode_streaming)
+                for i in [0,4]:
+                    sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], targetPos0_ik[i], sim.simx_opmode_streaming)
+                    sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
                 sim.simxPauseCommunication(clientID, False)
-
+                
                 time.sleep(2)
 
                 sim.simxPauseCommunication(clientID, True)
@@ -390,23 +407,22 @@ def main():
                     sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], 0, sim.simx_opmode_streaming)
                     sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
                 sim.simxPauseCommunication(clientID, False)
-                time.sleep(2)
-
-                ball_hit = True
-                hit_wall = False
         except:
             #print(sys.exc_info())
             #hit_thread.join()
             stop_prog = True
             print("Exception encountered, stopping program")
-            ball_thread.join()
+            #ball_thread.join()
+            print("Ball thread stopped")
             sim.simxGetPingTime(clientID)
             # Now close the connection to CoppeliaSim:
             sim.simxFinish(clientID)
-            sys.exit()
     else:
         print ('Failed connecting to remote API server')
         print ('Program ended')
+        sim.simxGetPingTime(clientID)
+        # Now close the connection to CoppeliaSim:
+        sim.simxFinish(clientID)
     
     
         #print(objs)

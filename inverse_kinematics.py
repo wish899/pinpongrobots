@@ -40,7 +40,7 @@ def findJointAngles(x_wgrip, y_wgrip, z_wgrip):
     theta3 = 0
     theta4 = 0
     theta5 = radians(-90)
-    theta6 = radians(90)
+    theta6 = radians(-90)
 
     #Find the grip coordinates, by subtracting from the coordinates the displacement of the base frame
     x_grip = x_wgrip
