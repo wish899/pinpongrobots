@@ -261,7 +261,7 @@ def main():
         prox_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor', sim.simx_opmode_blocking)
         racket_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor0', sim.simx_opmode_blocking)
         dummy_handle = sim.simxGetObjectHandle(clientID, 'Cylinder', sim.simx_opmode_blocking)
-        sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [0.7, 0.47, 0.0463], sim.simx_opmode_oneshot)
+        sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [0.65, 0.47, 0.0463], sim.simx_opmode_oneshot)
         sim.simxPauseCommunication(clientID, True)
         sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3001, 1, sim.simx_opmode_oneshot)
         #sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3000, -0.01, sim.simx_opmode_oneshot)
@@ -345,6 +345,9 @@ def main():
 
                 if ball_pos[0, :] > 0.9:
                     print("Ball too far away from robot. will not hit it ...")
+                    raise ValueError
+                elif ball_pos[0,:] < 0.2:
+                    print("Ball too close. cannot hit it...")
                     raise ValueError
                 
                 twist_angle = (-92.85) * (ball_pos[0,:]) + 90

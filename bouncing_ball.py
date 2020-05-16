@@ -27,9 +27,9 @@ class BouncingBall():
         cnt = 0
 
         #if(np.round(v_init[2], 2) == 0):
-        time_bounce = 2.65/v_init[1]
-        time_bounce_near = 2.85/v_init[1]
-        time_bounce_far = 2.45/v_init[1]
+        time_bounce = (2.65-y_wall)/v_init[1]
+        time_bounce_near = (2.85-y_wall)/v_init[1]
+        time_bounce_far = (2.45-y_wall)/v_init[1]
         x_end += v_init[0] * time_bounce
         x_world = -1 * x_end + 0.025
         if (np.abs(x_world) < 0.20):
