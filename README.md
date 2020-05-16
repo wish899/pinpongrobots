@@ -4,7 +4,7 @@
 The goal of this project is to have two robots (UR3) simulate rallying a ping-pong ball back and forth through the use of simple hits. The robots will detect the ping pong ball and calculate their position based on the ball's location and make predicative measurements to get ready to hit the ball back.
 
 ## Execute Program
-We are connecting remotely to coppelia through the python script, so to run the simulation, run the .ttt file and then run the python script simpleTest.py
+We are connecting remotely to coppelia through the python script, so to run the simulation, run project.ttt file and then run the python script stest.py
 
 ## Description of files
 stest.py is the main file for demonstrating our use of our simulator (CoppeliaSim). This file is the basis for demonstrating basic movement of the robot and the basis for collecting vision sensor data. 
@@ -40,3 +40,10 @@ We implement our inverse kinematics in inverse_kinematics.py and invoke it. We u
 ## Trajectory Generation
 
 We implement our line trajectory generation in bouncing_ball.py. In it, we take the last recorded position and velocity of the ball as it left the wall and predict the position of the ball when it reaches a position close to the robot. Here, we just use a linear approximation for the equation. 
+
+## Other files that we did not end up using in the project
+We had an example file, camTest.py to see how we can get the vision sensor data through the remoteAPI. However, we ended up not using the vision sensor as we realized that the proximity sensor was enough
+
+threading_example.py contains code written by Vishal and Yu-Hsuan Chang, which they used for their IoT project. The code is not actually used in the project, but we used this as a starting point for our threading
+
+project_vish.ttt contains the file that Vishal used for initial simulation testing. 
