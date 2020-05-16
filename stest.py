@@ -261,7 +261,7 @@ def main():
         prox_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor', sim.simx_opmode_blocking)
         racket_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor0', sim.simx_opmode_blocking)
         dummy_handle = sim.simxGetObjectHandle(clientID, 'Cylinder', sim.simx_opmode_blocking)
-        sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [-0.65, 0.47, 0.0463], sim.simx_opmode_oneshot)
+        sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [0.7, 0.47, 0.0463], sim.simx_opmode_oneshot)
         sim.simxPauseCommunication(clientID, True)
         sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3001, 1, sim.simx_opmode_oneshot)
         #sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3000, -0.01, sim.simx_opmode_oneshot)
@@ -416,16 +416,16 @@ def main():
                 ball_pos[0,:] = (-2 * left + 1) * ball_pos[0,:]
                 ball_pos[2,:] = ball_pos[2, :] + 0.15
                 end_pose  = np.array(end_pose).reshape((3,1))
-                print("Desired position: ", ball_pos[:3])
-                print("End-effector position: ", end_pose[:3])
-                print("Error (MMSE): ", np.linalg.norm(ball_pos[:3] - end_pose[:3]))
-                x_err = np.abs(end_pose[0,:] - ball_pos[0,:])/(ball_pos[0,:]) * 100
-                y_err = np.abs(end_pose[1,:] - ball_pos[1,:])/(ball_pos[1,:]) * 100
-                z_err = np.abs(end_pose[2,:] - ball_pos[2,:])/(ball_pos[2,:]) * 100
-                print("Error in X (%): ", x_err)
-                print("Error in Y (%): ", y_err)
-                print("Error in Z (%): ", z_err)
-                print("Total Error (%): ", (x_err + y_err + z_err)/3)
+                print("Desired position: \n", ball_pos[:3])
+                print("End-effector position: \n", end_pose[:3])
+                # print("Error (MMSE): ", np.linalg.norm(ball_pos[:3] - end_pose[:3]))
+                # x_err = np.abs((end_pose[0,:] - ball_pos[0,:])/(ball_pos[0,:])) * 100
+                # y_err = np.abs((end_pose[1,:] - ball_pos[1,:])/(ball_pos[1,:])) * 100
+                # z_err = np.abs((end_pose[2,:] - ball_pos[2,:])/(ball_pos[2,:])) * 100
+                # print("Error in X (%): ", x_err)
+                # print("Error in Y (%): ", y_err)
+                # print("Error in Z (%): ", z_err)
+                # print("Total Error (%): ", (x_err + y_err + z_err)/3)
         except:
             print(sys.exc_info())
             #hit_thread.join()
