@@ -43,3 +43,5 @@ We implement our line trajectory generation in bouncing_ball.py. In it, we take 
 
 ## Other files that we did not end up using in the project
 project_vish.ttt contains the file that Vishal used for initial simulation testing. 
+
+We initially had a modern_robotics package provided by Kevin Lynch and Frank Park as part of their software package for the textbook. However, since the package didn't work well with our simulation and we wrote our own code for inverse kineamtics, we did not actually end up using this package in the project.
