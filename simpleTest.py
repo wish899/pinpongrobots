@@ -14,10 +14,13 @@ from scipy.linalg import expm
 import sys
 sys.path.append('./')
 import inverse_kinematics as ik
+from bouncing_ball import BouncingBall
 #import modern_robotics as mr
 
 def radians(angle):
     return angle * (math.pi/180)
+def degrees(angle):
+    return angle * (180/math.pi)
 
 def skew_symmetric(screw, theta):
     s_k = np.array([[0,       -screw[2], screw[1], screw[3]],
@@ -67,31 +70,37 @@ if clientID!=-1:
     #print(objs)
 
     # using proximity sensor to detect when the ball hits the wall (enters proximity range)
-    detect_handle = sim.simxGetObjectHandle(clientID, 'DetectBall', sim.simx_opmode_blocking)
+    detect_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
     prox_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor', sim.simx_opmode_blocking)
-    sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [-1.48, -0.5250, 0.0463], sim.simx_opmode_oneshot)
+    sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [0.5, 0.475, 0.0463], sim.simx_opmode_oneshot)
     sim.simxPauseCommunication(clientID, True)
-    sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3000, -0.2, sim.simx_opmode_oneshot)
+    sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3001, 2, sim.simx_opmode_oneshot)
     sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3002, 2, sim.simx_opmode_oneshot)
     sim.simxPauseCommunication(clientID, False)
     sim.simxReadProximitySensor(clientID, prox_handle[1], sim.simx_opmode_streaming)
+    sim.simxGetObjectVelocity(clientID, detect_handle[1], sim.simx_opmode_streaming)
 
     y = 0
     points = []
+    velocities = []
     leave = 0
+
     # enter while loop to read proximity sensor
     while (y == 0):
         # read prox sensor and get detected points
         ret, dS, dP, dOH, dSNV = sim.simxReadProximitySensor(clientID, prox_handle[1], sim.simx_opmode_buffer)
+        ret, linear, angular = sim.simxGetObjectVelocity(clientID, detect_handle[1], sim.simx_opmode_buffer)
         # detecting
         if(dS == 1):
             # store all the detected points
             points.append(dP)
+            velocities.append(linear)
             leave = 1
         # not detecting and is heading away from wall
         elif(dS == 0 and leave == 1):
             y = 1
     print("Last Ball Detection Coordinates: ", points[-1])
+    print("Last Ball Velocities: ", velocities[-1])
 
     #Let's set the velocity of the ball
     ball_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
@@ -122,53 +131,53 @@ if clientID!=-1:
 
     ####pos0 = sim.simxGetObjectPosition(clientID, jointHandles_2[0][1], base_frame[1], sim.simx_opmode_blocking)
     ####pos1 = sim.simxGetObjectPosition(clientID, jointHandles_2[0][1], base_frame[1], sim.simx_opmode_blocking)
-    pos_b_ee = sim.simxGetObjectPosition(clientID, ee_frame[1], base_frame[1], sim.simx_opmode_blocking)
-    #print(pos_b_ee[1])
-    ori_b_ee = sim.simxGetObjectOrientation(clientID, ee_frame[1], base_frame[1], sim.simx_opmode_blocking)
-    #print(ori_b_ee)
-    rot_m = R.from_euler('xyz', np.array(ori_b_ee[1]))
-    #print(rot_m.as_dcm().shape)
-    M = np.zeros((4,4))
-    M[3][3] = 1
-    M[0:3, 0:3] = rot_m.as_dcm()
-    M[0:3, 3] = pos_b_ee[1]
-    print("Homogeneous transformation Matrix: ")
-    print(M)
-    print(" ")
-    ###ret_code, rot_matrix = sim.simxGetJointMatrix(clientID, jointHandles_2[5][1], sim.simx_opmode_blocking)
-    ###Get the joint positions and orientations with respect to base frame
-    np.set_printoptions(precision=3)
-    w = np.array([[0,0,1], [-1,0,0], [-1,0,0], [-1,0,0], [0,0,1], [1,0,0]])
-    print("Angular Velocities: ")
-    print(w, "\n")
-    v = np.zeros((6,3))
-    ret_code = 0
-    for i in range(6):
-        ret_code, q = sim.simxGetObjectPosition(clientID, jointHandles_2[i][1], base_frame[1], sim.simx_opmode_blocking)
-        q = np.array(q)
-        v[i,:] = np.cross(-1 * w[i,:], q)
+    # # pos_b_ee = sim.simxGetObjectPosition(clientID, ee_frame[1], base_frame[1], sim.simx_opmode_blocking)
+    # # #print(pos_b_ee[1])
+    # # ori_b_ee = sim.simxGetObjectOrientation(clientID, ee_frame[1], base_frame[1], sim.simx_opmode_blocking)
+    # # #print(ori_b_ee)
+    # # rot_m = R.from_euler('xyz', np.array(ori_b_ee[1]))
+    # # #print(rot_m.as_dcm().shape)
+    # # M = np.zeros((4,4))
+    # # M[3][3] = 1
+    # # M[0:3, 0:3] = rot_m.as_dcm()
+    # # M[0:3, 3] = pos_b_ee[1]
+    # # print("Homogeneous transformation Matrix: ")
+    # # print(M)
+    # # print(" ")
+    # # ###ret_code, rot_matrix = sim.simxGetJointMatrix(clientID, jointHandles_2[5][1], sim.simx_opmode_blocking)
+    # # ###Get the joint positions and orientations with respect to base frame
+    # # np.set_printoptions(precision=3)
+    # # w = np.array([[0,0,1], [-1,0,0], [-1,0,0], [-1,0,0], [0,0,1], [1,0,0]])
+    # # print("Angular Velocities: ")
+    # # print(w, "\n")
+    # # v = np.zeros((6,3))
+    # # ret_code = 0
+    # # for i in range(6):
+    # #     ret_code, q = sim.simxGetObjectPosition(clientID, jointHandles_2[i][1], base_frame[1], sim.simx_opmode_blocking)
+    # #     q = np.array(q)
+    # #     v[i,:] = np.cross(-1 * w[i,:], q)
 
-    print("Linear Velocities: ")
-    print(v, "\n")
-    S = np.zeros((6,6))
-    S[:, 0:3] = w
-    S[:, 3:6] = v
-    S_t = S.transpose()
-    print("Screw Matrix: ")
-    print(S_t, "\n") # debugging
+    # # print("Linear Velocities: ")
+    # # print(v, "\n")
+    # # S = np.zeros((6,6))
+    # # S[:, 0:3] = w
+    # # S[:, 3:6] = v
+    # # S_t = S.transpose()
+    # # print("Screw Matrix: ")
+    # # print(S_t, "\n") # debugging
 
-    #T = mr.FKinSpace(M, S_t, np.array([radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)])) #Fill the array with actual values later
-    T = get_transform(M, S_t, np.zeros((6,)))#print(type(T))
-    print("New Transformation Matrix: ")
-    print(T, "\n")
-    old_pos = np.ones((4,1))
-    old_pos[0:3] = 0
-    old_pos.resize((4,1))
-    new_pose = T @ old_pos
-    print("New Position: ")
-    print(new_pose)
+    # # #T = mr.FKinSpace(M, S_t, np.array([radians(90),radians(90),radians(-92),radians(233),radians(33),radians(24)])) #Fill the array with actual values later
+    # # T = get_transform(M, S_t, np.zeros((6,)))#print(type(T))
+    # # print("New Transformation Matrix: ")
+    # # print(T, "\n")
+    # # old_pos = np.ones((4,1))
+    # # old_pos[0:3] = 0
+    # # old_pos.resize((4,1))
+    # # new_pose = T @ old_pos
+    # # print("New Position: ")
+    # # print(new_pose)
 
-    new_pose.resize((4,))
+    # # new_pose.resize((4,))
 
     #Set-up some of the RML vectors:
     vel=90
@@ -225,37 +234,59 @@ if clientID!=-1:
     # new_ori_b_ee = new_rot.as_euler('xyz')
     # sim.simxSetObjectOrientation(clientID, ee_frame[1], base_frame[1], new_ori_b_ee, sim.simx_opmode_streaming
     print("\n", "Now trying inverse kinematics: ")
-    time.sleep(2)
-    _, ball_pos = sim.simxGetObjectPosition(clientID, ball_handle[1], -1, sim.simx_opmode_blocking)
+    # time.sleep(2)
+    # _, ball_pos = sim.simxGetObjectPosition(clientID, ball_handle[1], -1, sim.simx_opmode_blocking)
 
-    _, ball_ori = sim.simxGetObjectOrientation(clientID, ball_handle[1], -1, sim.simx_opmode_blocking)
+    # _, ball_ori = sim.simxGetObjectOrientation(clientID, ball_handle[1], -1, sim.simx_opmode_blocking)
 
-    ball_rot = R.from_euler('xyz', ball_ori)
-    ball_rot_mat = ball_rot.as_dcm()
+    # ball_rot = R.from_euler('xyz', ball_ori)
+    # ball_rot_mat = ball_rot.as_dcm()
     # ball_pos[0] = ball_pos[0]
-    # ball_pos[1] = ball_pos[1]
+    # ball_pos[1] = ball_pos
+    
+    print("initial velocities: ", velocities[-1])
+    print("position from sensor: ", points[-1])
+    b_ball = BouncingBall()
+    
+    pred_pos = b_ball.trajectory(points[-1][0], points[-1][1], points[-1][2], velocities[-1])
+    _, prox_dist = sim.simxGetObjectPosition(clientID, prox_handle[1], -1, sim.simx_opmode_streaming)
+    T_prox = np.array([[-1, 0, 0, 0.025], 
+                        [0, -1, 0, 2.85],
+                        [0,0,1,.043], 
+                        [0,0,0,1]])
+    prox_pos = np.array([[pred_pos[0]], [pred_pos[1]], [pred_pos[2]],[1]])
+    ball_pos = T_prox @ prox_pos
+    
+    # prox_pos = np.array([[-pred_pos[0]+0.025], [pred_pos[1]+2.85], [pred_pos[2]], [1]])
+    # ball_pos = prox_pos[:3]
 
-    world_coord = np.array([ball_pos[0], ball_pos[1]-.07, ball_pos[2]])
+    print("Predicted Position: ", pred_pos)
+    print("Ball pred: ", ball_pos[:3])
+    #Offsets are for making sure that we can hit the ball
+    world_coord = np.array([ball_pos[0,:], ball_pos[1,:], ball_pos[2,:]])
     world_coord = np.abs(world_coord)
 
     guess_angles = ik.findJointAngles(world_coord[0]+.07, world_coord[1], world_coord[2]+0.1)
     targetPos0_ik = guess_angles
 
-    if(ball_pos[0] < 0):
+    if(ball_pos[0,:] < 0):
         targetPos0_ik[0] = -guess_angles[0]
         targetPos0_ik[1] = -guess_angles[1]
         targetPos0_ik[2] = -guess_angles[2]
         targetPos0_ik[3] = -guess_angles[3]
         targetPos0_ik[4] = radians(90)
+    
 
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
         #print(jointHandles[i])
         #print(targetPos0[i])
-        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], 0, sim.simx_opmode_streaming)
+        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0_ik[i], sim.simx_opmode_streaming)
         sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
 
     sim.simxPauseCommunication(clientID, False)
+    time.sleep(1)
+    targetPos0_ik[0] = radians(degrees(targetPos0_ik[0] + radians(50)))
 
     sim.simxPauseCommunication(clientID, True)
     for i in range(6):
@@ -267,15 +298,40 @@ if clientID!=-1:
     sim.simxPauseCommunication(clientID, False)
     time.sleep(2)
 
-    sim.simxPauseCommunication(clientID, True)
-    for i in range(6):
-        #print(jointHandles[i])
-        #print(targetPos0[i])
-        sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], 0, sim.simx_opmode_streaming)
-        sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
+    # world_coord = np.array([-.5, .475, .043])
+    # world_coord = np.abs(world_coord)
 
-    sim.simxPauseCommunication(clientID, False)
-    time.sleep(2)
+    # guess_angles = ik.findJointAngles(world_coord[0]+.07, world_coord[1], world_coord[2]+0.1)
+    # targetPos0_ik = guess_angles
+
+    # if(ball_pos[0,:] > 0):
+    #     targetPos0_ik[0] = -guess_angles[0]
+    #     targetPos0_ik[1] = -guess_angles[1]
+    #     targetPos0_ik[2] = -guess_angles[2]
+    #     targetPos0_ik[3] = -guess_angles[3]
+    #     targetPos0_ik[4] = radians(90)
+    
+    
+    # sim.simxPauseCommunication(clientID, True)
+    # for i in range(6):
+    #     #print(jointHandles[i])
+    #     #print(targetPos0[i])
+    #     sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], targetPos0_ik[i], sim.simx_opmode_streaming)
+    #     sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
+
+    # sim.simxPauseCommunication(clientID, False)
+    # time.sleep(2)
+    # targetPos0_ik[0] = radians(degrees(targetPos0_ik[0] + 50))
+
+    # sim.simxPauseCommunication(clientID, True)
+    # for i in range(6):
+    #     #print(jointHandles[i])
+    #     #print(targetPos0[i])
+    #     sim.simxSetJointTargetPosition(clientID, jointHandles_2[i][1], 0, sim.simx_opmode_streaming)
+    #     sim.simxSetJointTargetVelocity(clientID, jointHandles_2[i][1], targetVel[i], sim.simx_opmode_streaming)
+
+    # sim.simxPauseCommunication(clientID, False)
+    # time.sleep(2)
     # T_b = np.zeros((4,4))
     # T_b[3,3] = 1
     # T_b[0:3, 0:3] = ball_rot_mat

@@ -35,9 +35,9 @@ class BouncingBall():
         if (np.abs(x_world) < 0.20):
             x_end += v_init[0] * (time_bounce_near - time_bounce)
             return [x_end, 2.85, z_wall]
-        elif (np.abs(x_world) > 0.80):
+        elif (np.abs(x_world) > 0.75):
             x_end += v_init[0] * (time_bounce_far - time_bounce)
-            return [x_end, 2.45, z_wall]
+            return [x_end, 2.45, z_wall-0.1]
         return [x_end, 2.65, z_wall]
         
         # while(y_end < self.y_threshold):

@@ -260,7 +260,8 @@ def main():
         detect_handle = sim.simxGetObjectHandle(clientID, 'Sphere', sim.simx_opmode_blocking)
         prox_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor', sim.simx_opmode_blocking)
         racket_handle = sim.simxGetObjectHandle(clientID, 'Proximity_sensor0', sim.simx_opmode_blocking)
-        sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [0.67, 0.47, 0.0995], sim.simx_opmode_oneshot)
+        dummy_handle = sim.simxGetObjectHandle(clientID, 'Cylinder', sim.simx_opmode_blocking)
+        sim.simxSetObjectPosition(clientID, detect_handle[1], -1, [-0.65, 0.47, 0.0463], sim.simx_opmode_oneshot)
         sim.simxPauseCommunication(clientID, True)
         sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3001, 1, sim.simx_opmode_oneshot)
         #sim.simxSetObjectFloatParameter(clientID, detect_handle[1], 3000, -0.01, sim.simx_opmode_oneshot)
@@ -269,6 +270,7 @@ def main():
         sim.simxReadProximitySensor(clientID, prox_handle[1], sim.simx_opmode_streaming)
         sim.simxGetObjectVelocity(clientID, detect_handle[1], sim.simx_opmode_streaming)
         sim.simxReadProximitySensor(clientID, racket_handle[1], sim.simx_opmode_streaming)
+        sim.simxGetObjectPosition(clientID, dummy_handle[1], -1, sim.simx_opmode_streaming)
         ball_thread = threading.Thread(target=get_ball_info, args=({clientID:clientID}))
         try:        
             #getting joint handles and initializing the joints in the simulation
@@ -356,7 +358,7 @@ def main():
                 
                 print("Applying the hitting motion")
                 #Apply the hitting motion using the new joint angles
-
+                end_pose = []
                 targetPos0_ik[0] = targetPos0_ik[0] + ((-2 * left) + 1) * (0 * np.pi/180) #To simulate a hit
                 targetPos0_ik[4] = targetPos0_ik[4] + ((-2 * left) + 1) * (0 * np.pi/180)
                 sim.simxPauseCommunication(clientID, True)
@@ -367,9 +369,12 @@ def main():
                     sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
 
                 sim.simxPauseCommunication(clientID, False)
+                
+
                 #Now read from the proximity sensor to see if it detects any ball
                 ret, dS, dP, dOH, dSNV = sim.simxReadProximitySensor(clientID, racket_handle[1], sim.simx_opmode_buffer)
                 while(dS == 0):
+                    _, end_pose = sim.simxGetObjectPosition(clientID, dummy_handle[1], -1, sim.simx_opmode_buffer)
                     ret, dS, dP, dOH, dSNV = sim.simxReadProximitySensor(clientID, racket_handle[1], sim.simx_opmode_buffer)
                 
                 print("Status of Ball is: ", dS)
@@ -377,7 +382,7 @@ def main():
                 #hitting motion
                 #Actually, for now, let's just not worry about this. Let's make sure that the trajectory generation and the ball hitting
                 #works
-
+                print("Twist angle is: ", twist_angle)
                 targetPos0_ik[0] = targetPos0_ik[0] + ((-2 * left) + 1) * ((1 * twist_angle) * np.pi/180) #To simulate a hit
                 
                 targetPos0_ik[4] = targetPos0_ik[4] + ((-2 * left) + 1) * (-1 * twist_angle * np.pi/180)
@@ -407,8 +412,22 @@ def main():
                     sim.simxSetJointTargetPosition(clientID, jointHandles[i][1], 0, sim.simx_opmode_streaming)
                     sim.simxSetJointTargetVelocity(clientID, jointHandles[i][1], targetVel[i], sim.simx_opmode_streaming)
                 sim.simxPauseCommunication(clientID, False)
+                ##Inverse Kinematics experiment and analysis: CAN BE COMMENTED OUT
+                ball_pos[0,:] = (-2 * left + 1) * ball_pos[0,:]
+                ball_pos[2,:] = ball_pos[2, :] + 0.15
+                end_pose  = np.array(end_pose).reshape((3,1))
+                print("Desired position: ", ball_pos[:3])
+                print("End-effector position: ", end_pose[:3])
+                print("Error (MMSE): ", np.linalg.norm(ball_pos[:3] - end_pose[:3]))
+                x_err = np.abs(end_pose[0,:] - ball_pos[0,:])/(ball_pos[0,:]) * 100
+                y_err = np.abs(end_pose[1,:] - ball_pos[1,:])/(ball_pos[1,:]) * 100
+                z_err = np.abs(end_pose[2,:] - ball_pos[2,:])/(ball_pos[2,:]) * 100
+                print("Error in X (%): ", x_err)
+                print("Error in Y (%): ", y_err)
+                print("Error in Z (%): ", z_err)
+                print("Total Error (%): ", (x_err + y_err + z_err)/3)
         except:
-            #print(sys.exc_info())
+            print(sys.exc_info())
             #hit_thread.join()
             stop_prog = True
             print("Exception encountered, stopping program")
