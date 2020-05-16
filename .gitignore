@@ -1,5 +1,6 @@
 *.png
 *.docx
+*.xlsx
 __pycache__/
 .vscode/
 project_update1.ttt
