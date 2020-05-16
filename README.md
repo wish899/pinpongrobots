@@ -44,6 +44,4 @@ We implement our line trajectory generation in bouncing_ball.py. In it, we take 
 ## Other files that we did not end up using in the project
 We had an example file, camTest.py to see how we can get the vision sensor data through the remoteAPI. However, we ended up not using the vision sensor as we realized that the proximity sensor was enough
 
-threading_example.py contains code written by Vishal and Yu-Hsuan Chang, which they used for their IoT project. The code is not actually used in the project, but we used this as a starting point for our threading
-
 project_vish.ttt contains the file that Vishal used for initial simulation testing. 
