@@ -14,10 +14,9 @@ def degrees(radian):
 
 def findJointAngles(x_wgrip, y_wgrip, z_wgrip):
     """
-    @param x_w: desired x-coordinate of end-effector in world frame
-    @param y_w: desired y-coordinate of end-effector world frame
-    @param z_w: desired z-coordinate of end-effector in world frame
-    @param yaw: the desired yaw (deviation in angle) from the base angle of the robot
+    @param x_wgrip: desired x-coordinate of end-effector in world frame
+    @param y_wgrip: desired y-coordinate of end-effector world frame
+    @param z_wgrip: desired z-coordinate of end-effector in world frame
 
     @return value: [theta1, theta2, theta3, theta4, theta5, theta6]: joint angles needed for
     desired configuration

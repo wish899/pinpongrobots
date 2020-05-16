@@ -45,7 +45,11 @@ stop_prog = False
 #import modern_robotics as mr
 def get_ball_info(clientID):
     """
-    stores the linear velocity of the last time that the ball hit
+    stores the linear velocity and the position variable of the last time that the ball hit the wall
+    stores it in the global coordinates ball_coord and ball_linear
+
+    @param clientID: ID used to connect to CoppeliaSim's environment
+    @return None
     """
     global ball_coord
     global ball_linear

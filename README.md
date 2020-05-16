@@ -42,6 +42,4 @@ We implement our inverse kinematics in inverse_kinematics.py and invoke it. We u
 We implement our line trajectory generation in bouncing_ball.py. In it, we take the last recorded position and velocity of the ball as it left the wall and predict the position of the ball when it reaches a position close to the robot. Here, we just use a linear approximation for the equation. 
 
 ## Other files that we did not end up using in the project
-We had an example file, camTest.py to see how we can get the vision sensor data through the remoteAPI. However, we ended up not using the vision sensor as we realized that the proximity sensor was enough
-
 project_vish.ttt contains the file that Vishal used for initial simulation testing. 

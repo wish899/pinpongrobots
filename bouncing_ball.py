@@ -11,6 +11,15 @@ class BouncingBall():
         self.rest = .82
         pass
     def trajectory(self, x_wall, y_wall, z_wall, v_init):
+        """
+        @param x_wall (number): last recorded coordinates of the ball as it leaves the proximity sensor's vicinity
+        @param y_wall (number): last recorded y-coordinate of the ball as it leaves the proximity sensor's vicinity
+        @param z_wall (number): last recorded z-coordinate of the ball as it leaves the proximity sensor's vicinity
+
+        @param v_init [(3,) number]: the velocity of the ball as it bounces off the wall and leaves the sensor's range
+
+        @return [x_end, y_end, z_end]: predicted end position at which the robot will hit 
+        """
         #Perform trajectory calculation until we reach x_rob and z_rob
         #Perform trajectory calculation until
         #So, trajectory generation takes literally forever:
